@@ -1,0 +1,34 @@
+name: GPS Single Run
+on: [workflow_dispatch]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        
+    - run: |
+        npm install
+        npm run build
+        
+    - uses: actions/setup-java@v4
+      with:
+        java-version: 17
+        
+    - uses: android-actions/setup-android@v3
+      
+    # npx/cap 생략! dist 그대로 압축
+    - name: Package APK
+      run: |
+        mkdir -p apk/assets/www
+        cp -r dist/* apk/assets/www/
+        zip -r cnote-gps-web.zip apk
+        
+    - uses: actions/upload-artifact@v4
+      with:
+        name: cnote-gps-web
+        path: cnote-gps-web.zip
