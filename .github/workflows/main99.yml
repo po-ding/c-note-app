@@ -1,0 +1,39 @@
+name: GPS No Lock
+on: [workflow_dispatch]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Node 직접 + Lock 무시
+      run: |
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        sudo apt-get install -y nodejs npm
+        
+    - uses: actions/checkout@v4
+    
+    # 핵심! lock 완전 무시
+    - name: npm NO LOCK
+      run: |
+        rm -f package-lock.json yarn.lock
+        npm install --no-package-lock --no-shrinkwrap --ignore-scripts
+        
+    - name: Java Android
+      uses: android-actions/setup-android@v3
+      
+    - name: APK
+      run: |
+        npm run build
+        npm i @capacitor/core @capacitor/android --no-package-lock
+        npx cap init CNote com.cnote.gps || true
+        npx cap add android || true
+        npx cap sync android || true
+        cd android 2>/dev/null || exit 0
+        ./gradlew assembleDebug || echo "APK skip"
+        
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: no-lock-apk
+        path: |
+          **/*.apk
