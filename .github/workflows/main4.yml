@@ -1,0 +1,49 @@
+name: 4GPS APK Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        
+    - name: Clean install
+      run: |
+        rm -f package-lock.json yarn.lock npm-shrinkwrap.json
+        npm install --no-optional
+        
+    - name: Setup Java 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Android SDK
+      uses: malinskiy/action-android/install-sdk@v2
+      
+    - name: Accept licenses
+      run: yes | sdkmanager --licenses
+      
+    - name: Capacitor Build
+      run: |
+        npm run build
+        npx cap sync android || true
+        cd android || exit 1
+        chmod +x gradlew
+        ./gradlew assembleRelease --no-daemon
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: gps-apk-release
+        path: |
+          android/app/build/outputs/apk/release/*.apk
+        retention-days: 30
