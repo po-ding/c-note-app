@@ -1,0 +1,54 @@
+name: GPS NPM Skip
+on: [workflow_dispatch]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18 # 또는 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install --include=dev
+          # Capacitor 필수 패키지가 package.json에 없다면 여기서 설치
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Build Web App (Vite)
+        run: npm run build
+        # 이 단계가 완료되면 dist 폴더가 생겨야 합니다.
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Capacitor Sync & Android Build
+        run: |
+          # Capacitor 설정이 없다면 초기화 (이미 있으면 에러나므로 || true 처리)
+          npx cap init GPS com.example.gps --web-dir dist || true
+          
+          # 안드로이드 플랫폼 추가 및 동기화
+          npx cap add android || true
+          npx cap sync android
+          
+          # Gradle 실행 권한 부여 및 빌드
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: gps-apk
+          path: android/app/build/outputs/apk/debug/*.apk
