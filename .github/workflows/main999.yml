@@ -1,0 +1,51 @@
+name: GPS Pure Android
+on: [workflow_dispatch]
+
+jobs:
+  webview:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        
+    - run: npm install
+    - run: npm run build  # 성공!
+    
+    - uses: actions/setup-java@v4
+      with:
+        java-version: 17
+        
+    - uses: android-actions/setup-android@v3
+      
+    # 수동 Android WebView 앱 생성
+    - name: Create Android Project
+      run: |
+        mkdir -p android/app/src/main/{java/com/cnote/gps,assets/www,res/values,res/xml,res/drawable}
+        echo '<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+  <uses-permission android:name="android.permission.INTERNET"/>
+  <application android:allowBackup="true">
+    <activity android:name=".MainActivity" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>' > android/app/src/main/AndroidManifest.xml
+        
+        cp -r dist/* android/app/src/main/assets/www/
+        
+    - name: Generate APK
+      run: |
+        cd android
+        ./gradlew assembleDebug
+        
+    - uses: actions/upload-artifact@v4
+      with:
+        name: pure-gps-apk
+        path: android/app/build/outputs/apk/debug/*.apk
