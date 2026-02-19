@@ -1,0 +1,46 @@
+name: 3GPS APK Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js (NO CACHE)
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: false  # ⚠️ 캐시 OFF (lock 파일 문제 해결)
+        
+    - name: Install dependencies
+      run: npm install  # ⚠️ ci → install 변경
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Build Capacitor Android
+      run: |
+        npm run build
+        npx cap sync android
+        cd android
+        ./gradlew assembleRelease
+        
+    - name: Upload GPS APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: gps-apk
+        path: android/app/build/outputs/apk/release/app-release.apk
+        retention-days: 30
