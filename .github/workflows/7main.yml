@@ -1,0 +1,42 @@
+name: 77GPS Fixed APK
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        # cache 완전 제거!
+        
+    - name: npm install
+      run: npm install
+      
+    - name: Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: 17
+        distribution: temurin
+        
+    - name: Android
+      uses: android-actions/setup-android@v3
+      
+    - name: Build APK
+      run: |
+        npm run build
+        npm i @capacitor/core @capacitor/android @capacitor/geolocation
+        npx cap init CNote com.cnote.app || true
+        npx cap add android || true
+        npx cap sync android
+        cd android
+        ./gradlew assembleDebug
+        
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: gps-fixed-apk
+        path: android/app/build/outputs/apk/debug/*.apk
