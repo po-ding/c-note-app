@@ -1,0 +1,93 @@
+name: GPS No NPX
+on: [workflow_dispatch]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Node 최소
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        
+    - name: npm only
+      run: npm install
+      
+    - name: Build Vite
+      run: npm run build
+      
+    - name: Java Android
+      uses: actions/setup-java@v4
+      with:
+        java-version: 17
+      uses: android-actions/setup-android@v3
+      
+    # npx 완전 제거! 수동 WebView
+    - name: Manual WebView APK
+      run: |
+        mkdir -p android/app/src/main/assets/www
+        mkdir -p android/app/src/main/res/values
+        cp -r dist/* android/app/src/main/assets/www/
+        
+        cat > android/app/src/main/AndroidManifest.xml << 'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.cnote.gps">
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <application android:allowBackup="true">
+    <activity android:name=".MainActivity" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>
+EOF
+        
+        mkdir -p android/app/src/main/java/com/cnote/gps
+        cat > android/app/src/main/java/com/cnote/gps/MainActivity.java << 'EOF'
+package com.cnote.gps;
+import android.os.Bundle;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import androidx.appcompat.app.AppCompatActivity;
+public class MainActivity extends AppCompatActivity {
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    WebView webView = new WebView(this);
+    webView.getSettings().setJavaScriptEnabled(true);
+    webView.loadUrl("file:///android_asset/www/index.html");
+    setContentView(webView);
+  }
+}
+EOF
+        
+    - name: Gradle APK
+      run: |
+        cd android
+        echo 'apply plugin: "com.android.application"
+android {
+  compileSdk 34
+  defaultConfig {
+    applicationId "com.cnote.gps"
+    minSdk 21
+    targetSdk 34
+    versionCode 1
+    versionName "1.0"
+  }
+}
+dependencies {
+  implementation "androidx.appcompat:appcompat:1.6.1"
+}' > app/build.gradle
+        
+        ./gradlew assembleDebug
+        
+    - uses: actions/upload-artifact@v4
+      with:
+        name: webview-gps-apk
+        path: android/app/build/outputs/apk/debug/*.apk
