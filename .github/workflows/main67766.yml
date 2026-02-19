@@ -1,0 +1,29 @@
+- name: Build Web App
+      run: |
+        npm install --legacy-peer-deps
+        npx vite build
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: 17
+        distribution: 'zulu'
+
+    - name: Capacitor Sync & Android Build
+      run: |
+        # 1. Capacitor 실행 도구(CLI)를 반드시 먼저 설치해야 합니다.
+        npm install @capacitor/cli @capacitor/core @capacitor/android
+        
+        # 2. 안드로이드 설정 동기화
+        # (만약 에러가 나면 npx 대신 ./node_modules/.bin/cap 을 사용합니다)
+        npx cap sync android || ./node_modules/.bin/cap sync android
+        
+        # 3. 안드로이드 빌드 진행
+        if [ -d "android" ]; then
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+        else
+          echo "Error: android folder not found"
+          exit 1
+        fi
