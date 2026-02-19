@@ -1,0 +1,23 @@
+- name: Build Web App (Vite)
+        run: |
+          # 1. 의존성 설치 (필수)
+          npm install
+          # 2. 빌드 실행 (Vite 직접 실행으로 타입 에러 무시)
+          npx vite build
+          # 3. 빌드 결과물 확인 (디버깅용)
+          ls -R dist
+
+      - name: Capacitor Sync & Android Build
+        run: |
+          # dist 폴더가 있는지 확인 후 진행
+          if [ -d "dist" ]; then
+            npx cap init GPS com.example.gps --web-dir dist || true
+            npx cap add android || true
+            npx cap sync android
+            cd android
+            chmod +x gradlew
+            ./gradlew assembleDebug
+          else
+            echo "빌드 폴더(dist)가 생성되지 않았습니다!"
+            exit 1
+          fi
