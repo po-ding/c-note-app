@@ -1,0 +1,36 @@
+name: GPS Direct Node
+on: [workflow_dispatch]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+    # setup-node 완전 생략!
+    - name: Install Node 직접
+      run: |
+        sudo apt update
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        sudo apt install -y nodejs npm
+        
+    - uses: actions/checkout@v4
+    
+    - name: npm install (직접)
+      run: npm install
+      
+    - name: Java + Android
+      uses: android-actions/setup-android@v3
+      
+    - name: Build everything
+      run: |
+        npm run build
+        npm i @capacitor/core @capacitor/cli @capacitor/android @capacitor/geolocation
+        npx cap init CNote com.cnote.gps
+        npx cap add android
+        npx cap sync android
+        cd android
+        ./gradlew assembleDebug
+        
+    - uses: actions/upload-artifact@v4
+      with:
+        name: direct-gps-apk
+        path: android/app/build/outputs/apk/debug/*.apk
