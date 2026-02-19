@@ -1,0 +1,23 @@
+- name: Build Web App
+        run: |
+          npm install --legacy-peer-deps
+          npx vite build # 여기서 빌드가 성공했으므로 다음으로 넘어갑니다.
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Capacitor Sync & Android Build
+        run: |
+          # 1. Capacitor 실행 도구를 먼저 설치 (이게 없어서 에러가 난 것입니다)
+          npm install @capacitor/cli @capacitor/core @capacitor/android
+          
+          # 2. 동기화 실행
+          npx cap sync android
+          
+          # 3. 안드로이드 빌드 시작
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
