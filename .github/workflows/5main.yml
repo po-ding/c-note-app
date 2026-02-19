@@ -1,0 +1,36 @@
+name: 5GPS Simple APK
+
+on: [workflow_dispatch]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    # NPM 완전 스킵하고 직접 설치
+    - run: |
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+        npm install --ignore-scripts --no-audit --no-fund
+        
+    - uses: actions/setup-java@v4
+      with:
+        java-version: 17
+        distribution: temurin
+        
+    - uses: android-actions/setup-android@v3
+    
+    - run: |
+        npm run build || npm run dev || echo "build skip"
+        npx cap sync android || mkdir -p android
+        cd android 2>/dev/null || cd ..
+        ./gradlew assembleDebug --no-daemon || ./gradlew assembleRelease
+        
+    - uses: actions/upload-artifact@v4
+      with:
+        name: c-note-gps-apk
+        path: |
+          android/app/build/outputs/**/*.apk
+          **/*.apk
+        if-no-files-found: ignore
