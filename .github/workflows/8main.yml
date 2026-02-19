@@ -1,0 +1,41 @@
+name: GPS V3 APK
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    # v3으로 다운그레이드 (lock 무시)
+    - name: Setup Node.js v3
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        
+    - name: npm install
+      run: npm install
+      
+    - name: Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: 17
+        
+    - name: Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Capacitor + APK
+      run: |
+        npm run build
+        npm i @capacitor/core @capacitor/android @capacitor/geolocation
+        npx cap init CNote com.cnote.app || true
+        npx cap add android || true
+        npx cap sync android
+        cd android
+        ./gradlew assembleDebug
+        
+    - name: APK 업로드
+      uses: actions/upload-artifact@v4
+      with:
+        name: gps-v3-apk
+        path: android/app/build/outputs/apk/debug/*.apk
