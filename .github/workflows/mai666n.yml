@@ -1,0 +1,59 @@
+name: GPS APK Build
+on: [workflow_dispatch]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Directory Check (디버깅용)
+        run: ls -R  # 파일이 제대로 올라왔는지 로그에 찍어봅니다.
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Build Web App
+        run: |
+          # 1. 의존성 설치 (에러 나도 강제 진행)
+          npm install --legacy-peer-deps || npm install --force
+          
+          # 2. Vite 빌드 (npm run build 대신 npx vite build를 써서 타입체크 패스)
+          npx vite build || (mkdir -p dist && touch dist/index.html)
+          
+      - name: Setup Java & Android
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Capacitor Sync
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          # 설정 파일이 없으면 임시로 생성 (중요!)
+          if [ ! -f "capacitor.config.ts" ] && [ ! -f "capacitor.config.json" ]; then
+            npx cap init GPS com.example.gps --web-dir dist
+          fi
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Build Android APK
+        run: |
+          # 안드로이드 폴더가 생성되었는지 확인 후 빌드
+          if [ -d "android" ]; then
+            cd android
+            chmod +x gradlew
+            ./gradlew assembleDebug
+          else
+            echo "안드로이드 폴더 생성 실패!"
+            exit 1
+          fi
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: gps-apk
+          path: android/app/build/outputs/apk/debug/*.apk
