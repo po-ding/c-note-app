@@ -1,0 +1,44 @@
+name: GPS Capacitor Fixed
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        
+    - run: npm install
+      
+    - uses: actions/setup-java@v4
+      with:
+        java-version: 17
+        
+    - uses: android-actions/setup-android@v3
+      
+    - name: Build Web (성공!)
+      run: npm run build
+      
+    - name: Capacitor 설치 + 초기화
+      run: |
+        npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest @capacitor/geolocation@latest
+        npx cap init CNote com.cnote.gps
+        
+    - name: Android 플랫폼 추가
+      run: |
+        npx cap add android
+        npx cap sync android
+        
+    - name: APK 빌드
+      run: |
+        cd android
+        ./gradlew assembleDebug
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: cnote-gps-apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
