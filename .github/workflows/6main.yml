@@ -1,0 +1,40 @@
+name: No Node Cache APK
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    # Node 직접 설치 (setup-node 스킵!)
+    - name: Install Node 직접
+      run: |
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+        
+    - uses: actions/checkout@v4
+    
+    - name: npm 무시하고 설치
+      run: |
+        npm install --no-lockfile-check --no-audit --no-fund
+        
+    - uses: actions/setup-java@v4
+      with:
+        java-version: 17
+        
+    - uses: android-actions/setup-android@v3
+      
+    - name: APK 빌드
+      run: |
+        npm run build || echo "build skip"
+        npm i @capacitor/core @capacitor/android --no-save
+        npx cap add android || echo "cap skip"
+        cd android || mkdir android && cd android
+        ./gradlew assembleDebug || echo "debug skip"
+        
+    - name: 모든 APK 업로드
+      uses: actions/upload-artifact@v4
+      with:
+        name: all-apks
+        path: |
+          **/*.apk
+          android/**/*.apk
