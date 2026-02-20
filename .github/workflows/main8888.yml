@@ -1,0 +1,25 @@
+name: Vite Build Fixed
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        
+    - name: Install
+      run: npm ci --ignore-scripts
+      
+    - name: Direct Vite Build
+      run: npx vite build  # npm run 생략!
+      
+    - name: Upload dist
+      uses: actions/upload-artifact@v4
+      with:
+        name: vite-dist
+        path: dist
