@@ -1,0 +1,32 @@
+name: Direct Vite APK
+on: [workflow_dispatch]
+
+jobs:
+  direct:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        
+    - name: deps
+      run: npm i
+        
+    # npm run build X → vite 직접!
+    - name: vite build
+      run: |
+        npx vite build
+        
+    - name: APK 준비
+      run: |
+        mkdir -p web-apk/assets
+        cp -r dist/* web-apk/assets/
+        zip -r cnote-gps.zip web-apk
+        
+    - uses: actions/upload-artifact@v4
+      with:
+        name: gps-web-apk
+        path: cnote-gps.zip
