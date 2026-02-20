@@ -1,0 +1,39 @@
+name: Pure Node Vite
+on: [workflow_dispatch]
+
+jobs:
+  pure:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    # Node 직접 설치 (npm 재설치)
+    - name: Fresh Node
+      run: |
+        sudo apt update
+        curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+        sudo apt install -y nodejs
+        node --version
+        npm --version
+        
+    - name: Minimal deps
+      run: |
+        npm install vite @vitejs/plugin-react react react-dom lucide-react
+        
+    - name: Vite config
+      run: |
+        cat > vite.config.js << 'EOF'
+const { defineConfig } = require('vite')
+const react = require('@vitejs/plugin-react')
+module.exports = defineConfig({
+  plugins: [react()]
+})
+EOF
+        
+    - name: Direct build
+      run: npx vite build
+        
+    - uses: actions/upload-artifact@v4
+      with:
+        name: pure-vite
+        path: dist
