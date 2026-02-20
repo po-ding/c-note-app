@@ -1,0 +1,20 @@
+name: Pnpm Vite
+on: [workflow_dispatch]
+jobs:
+  pnpm:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 9
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: true
+    - run: pnpm install
+    - run: pnpm build
+    - uses: actions/upload-artifact@v4
+      with:
+        name: pnpm-dist
+        path: dist
