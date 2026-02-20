@@ -1,0 +1,41 @@
+name: Clean NPM Vite
+on: [workflow_dispatch]
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    # npm 완전 새로 설치
+    - name: Fresh Node + NPM
+      run: |
+        sudo apt update
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
+        sudo apt install -y nodejs
+        npm --version
+        npx --version
+        
+    - name: Direct Vite
+      run: |
+        npm init -y
+        npm i vite@6.4.1 @vitejs/plugin-react react react-dom lucide-react recharts @google/genai --save
+        npm i typescript --save-dev
+        
+        # vite.config.ts 직접 생성
+        cat > vite.config.ts << 'EOF'
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+})
+EOF
+        
+    - name: Build
+      run: npx vite build
+      
+    - uses: actions/upload-artifact@v4
+      with:
+        name: clean-vite-dist
+        path: dist
