@@ -1,0 +1,22 @@
+name: Docker Vite Build
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Docker 포함!
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Docker Build Vite
+      run: |
+        docker run --rm -v ${{ github.workspace }}:/app -w /app node:18-alpine sh -c "
+        npm ci &&
+        npm run build &&
+        tar -czf /app/dist.tar.gz -C /app dist &&
+        ls -la /app/dist*"
+        
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: vite-dist-docker
+        path: dist.tar.gz
